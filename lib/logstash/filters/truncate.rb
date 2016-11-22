@@ -16,6 +16,13 @@ class LogStash::Filters::Truncate < LogStash::Filters::Base
   # strings in the event. This default behavior could be computationally
   # expensive, so if you know exactly which fields you wish to truncate, it is
   # advised that you be specific and configure the fields you want truncated.
+  #
+  # Special behaviors for non-string fields:
+  # 
+  # * Numbers: No action
+  # * Array: this plugin will attempt truncation on all elements of that array.
+  # * Hash: truncate will try all values of the hash (recursively, if this hash
+  # contains other hashes).
   config :fields, :validate => :string, :list => true
 
   # Fields over this length will be truncated to this length.
