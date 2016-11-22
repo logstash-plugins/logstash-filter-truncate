@@ -41,59 +41,65 @@ class LogStash::Filters::Truncate < LogStash::Filters::Base
   def filter(event)
     if @fields
       @fields.each do |field|
-        truncate(event, field, @length_bytes)
+        Truncator.truncate(event, field, @length_bytes)
       end
     else
-      truncate_all(event, @length_bytes)
+      Truncator.truncate_all(event, @length_bytes)
     end
   end
 
-  private
-  def truncate(event, field, length)
-    value = event.get(field)
-    if value.is_a?(String)
-      event.set(field, trim(value, length))
-    elsif value.is_a?(Array)
-      new_list = value.map { |v| v.is_a?(String) ? trim(v, length) : v }
-      event.set(field, new_list)
-    elsif value.is_a?(Hash) || value.is_a?(java.util.Map)
-      value.keys.each do |key|
-        truncate(event, "#{field}[#{key}]", length)
+  module Truncator
+    module_function
+    
+    def trim(value, length)
+      return value if value.bytesize <= length
+      return value if value.nil?
+      return "" if length == 0
+      return nil if length < 0
+
+      # Nothing to truncate if the string is empty.
+      return value if value.length == 0
+
+      # Do the actual truncation.
+      v = value.byteslice(0, length)
+
+      # Verify we didn't break the last multibyte character.
+      # If we did, keep backing up until it's a good one.
+      # Unpack 'U' here will throw an exception if the last character is not a
+      # valid UTF-8 character.
+      # Note: I am not certain this is the correct solution in all cases.
+      i = 0
+      while !(v[-1].valid_encoding? && v.bytesize > 0)
+        i += 1
+        return "" if length - i == 0
+        v = value.byteslice(0, length - i)
+      end
+
+      return v
+    end
+
+    def truncate_all(event, length)
+      # TODO(sissel): I couldn't find a better way to get the top level keys for
+      # an event. Nor could I find a way to iterate over all the keys in an
+      # event, so this may have to suffice.
+      fields = event.to_hash.keys.map { |k| "[#{k}]" }
+      fields.each do |field|
+        truncate(event, field, length)
       end
     end
-  end
 
-  def trim(value, length)
-    return value if value.bytesize <= length
-    return value if value.nil?
-    return "" if length == 0
-    return nil if length < 0
-
-    # Nothing to truncate if the string is empty.
-    return value if value.length == 0
-
-    # Do the actual truncation.
-    v = value.byteslice(0, length)
-
-    # Verify we didn't break the last multibyte character.
-    # If we did, keep backing up until it's a good one.
-    # Unpack 'U' here will throw an exception if the last character is not a
-    # valid UTF-8 character.
-    # Note: I am not certain this is the correct solution in all cases.
-    i = 0
-    while !(v[-1].valid_encoding? && v.bytesize > 0)
-      i += 1
-      return "" if length - i == 0
-      v = value.byteslice(0, length - i)
+    def truncate(event, field, length)
+      value = event.get(field)
+      if value.is_a?(String)
+        event.set(field, trim(value, length))
+      elsif value.is_a?(Array)
+        new_list = value.map { |v| v.is_a?(String) ? trim(v, length) : v }
+        event.set(field, new_list)
+      elsif value.is_a?(Hash) || value.is_a?(java.util.Map)
+        value.keys.each do |key|
+          truncate(event, "#{field}[#{key}]", length)
+        end
+      end
     end
-
-    return v
-  end
-
-  def truncate_all(event, length)
-    # TODO(sissel): I couldn't find a better way to get the top level keys for
-    # an event. Nor could I find a way to iterate over all the keys in an
-    # event, so this may have to suffice.
-    truncate(event, event.to_hash.keys.map { |k| "[#{k}]" }, length)
   end
 end
