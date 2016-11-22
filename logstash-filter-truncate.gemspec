@@ -1,7 +1,7 @@
 Gem::Specification.new do |s|
 
   s.name            = 'logstash-filter-truncate'
-  s.version         = '0.0.1'
+  s.version         = '1.0.0'
   s.licenses        = ['Apache License (2.0)']
   s.summary         = "This filter allows you to truncate fields to a given length."
   s.description     = "This gem is a Logstash plugin required to be installed on top of the Logstash core pipeline using $LS_HOME/bin/logstash-plugin install gemname. This gem is not a stand-alone program"
@@ -22,5 +22,5 @@ Gem::Specification.new do |s|
   # Gem dependencies
   s.add_runtime_dependency "logstash-core-plugin-api", ">= 1.60", "<= 2.99"
   s.add_development_dependency "logstash-devutils"
-  s.add_development_dependency "flores"
+  s.add_development_dependency "flores", "~> 0.0.7"
 end
