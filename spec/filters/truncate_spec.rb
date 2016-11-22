@@ -16,9 +16,9 @@ describe LogStash::Filters::Truncate do
   context "defaults" do
     let(:data) {
       {
-        "foo" => { "bar" => Flores::Random.text(0,1000) },
-        "one" => { "two" => { "three" => Flores::Random.text(0,1000) } },
-        "baz" => Flores::Random.text(0,1000),
+        "foo" => { "bar" => Flores::Random.text(0..1000) },
+        "one" => { "two" => { "three" => Flores::Random.text(0..1000) } },
+        "baz" => Flores::Random.text(0..1000),
       }
     }
     let(:length) { Flores::Random.integer(0..1000) }
@@ -37,8 +37,6 @@ describe LogStash::Filters::Truncate do
   context "with string fields" do
     let(:text) { Flores::Random.text(0..1000) }
     let(:length) { Flores::Random.integer(0..1000) }
-    #let(:text) { "БCEi{s5xjWUCדB2Б8אHEep,4|3" }
-    #let(:length) { 5 }
     subject { described_class.new("length_bytes" => length, "fields" => [ "example" ]) }
     let(:event) { LogStash::Event.new("message" => text, "example" => text) }
 
@@ -48,6 +46,9 @@ describe LogStash::Filters::Truncate do
 
     stress_it "should truncate the requested field" do
       expect(event.get("example").bytesize).to be <= length
+    end
+
+    stress_it "should remain valid UTF-8" do
       expect(event.get("example")).to be_valid_encoding
     end
 
