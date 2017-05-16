@@ -46,6 +46,7 @@ class LogStash::Filters::Truncate < LogStash::Filters::Base
     else
       Truncator.truncate_all(event, @length_bytes)
     end
+    filter_matched(event)
   end
 
   module Truncator
