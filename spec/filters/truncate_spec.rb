@@ -84,6 +84,14 @@ describe LogStash::Filters::Truncate do
       end
     end
   end
+
+  describe "calling of filter_matched" do
+    subject { described_class.new("length_bytes" => 1, "fields" => [ "example" ]) }
+    let(:event) { LogStash::Event.new("example" => 1000) }
+
+    it "should be called" do
+      expect(subject).to receive(:filter_matched).once
+      subject.filter(event)
+    end
+  end
 end
-
-
