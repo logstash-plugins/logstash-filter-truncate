@@ -13,7 +13,7 @@ end
 describe LogStash::Filters::Truncate do
   analyze_results
 
-  context "defaults" do
+  context "with hash fields" do
     let(:data) {
       {
         "foo" => { "bar" => Flores::Random.text(0..1000) },
@@ -29,8 +29,25 @@ describe LogStash::Filters::Truncate do
 
     stress_it "should truncate all strings in the hash" do
       expect(event.get("[foo][bar]").bytesize).to be <= length
+      if event.get("[foo][bar]").bytesize > length
+        expect(subject).to receive(:filter_matched).once
+      else
+        expect(subject).not_to receive(:filter_matched)
+      end
+
       expect(event.get("[one][two][three]").bytesize).to be <= length
+      if event.get("[one][two][three]").bytesize > length
+        expect(subject).to receive(:filter_matched).once
+      else
+        expect(subject).not_to receive(:filter_matched)
+      end
+
       expect(event.get("baz").bytesize).to be <= length
+      if event.get("baz").bytesize > length
+        expect(subject).to receive(:filter_matched).once
+      else
+        expect(subject).not_to receive(:filter_matched)
+      end
     end
   end
 
@@ -55,6 +72,14 @@ describe LogStash::Filters::Truncate do
     it "should not modify `message`" do
       expect(event.get("message")).to be == text
     end
+
+    stress_it "should only call filter_matched if a field was truncated" do
+      if event.get("example").bytesize > length
+        expect(subject).to receive(:filter_matched).once
+      else
+        expect(subject).not_to receive(:filter_matched)
+      end
+    end
   end
 
   context "with non-string fields" do
@@ -64,8 +89,9 @@ describe LogStash::Filters::Truncate do
     let(:event) { LogStash::Event.new("example" => number) }
 
 
-    it "should do nothing" do
+    stress_it "should do nothing" do
       expect(event.get("example")).to be == number
+      expect(subject).not_to receive(:filter_matched)
     end
   end
 
@@ -81,17 +107,13 @@ describe LogStash::Filters::Truncate do
     stress_it "should truncate all elements in a list" do
       count.times do |i| 
         expect(event.get("[example][#{i}]").bytesize).to be <= length
+
+        if event.get("[example][#{i}]").bytesize > length
+          expect(subject).to receive(:filter_matched).once
+        else
+          expect(subject).not_to receive(:filter_matched)
+        end
       end
-    end
-  end
-
-  describe "calling of filter_matched" do
-    subject { described_class.new("length_bytes" => 1, "fields" => [ "example" ]) }
-    let(:event) { LogStash::Event.new("example" => 1000) }
-
-    it "should be called" do
-      expect(subject).to receive(:filter_matched).once
-      subject.filter(event)
     end
   end
 end
