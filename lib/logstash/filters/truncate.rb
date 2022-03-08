@@ -86,17 +86,17 @@ class LogStash::Filters::Truncate < LogStash::Filters::Base
     end
 
     def truncate_all(fields, event, length)
-      truncated = []
+      truncated = false
 
       fields.each do |field|
         before = event.get(field)
         truncate(event, field, length)
         after = event.get(field)
 
-        truncated.append(true) if before != after
+        truncated ||= (before != after)
       end
 
-      truncated.any?
+      truncated
     end
 
     def truncate(event, field, length)
