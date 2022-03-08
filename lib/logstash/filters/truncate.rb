@@ -49,8 +49,10 @@ class LogStash::Filters::Truncate < LogStash::Filters::Base
       truncated = Truncator.truncate_all(fields, event, @length_bytes)
     end
     
-    @logger.debug("truncated one or more fields from event to length #{@length_bytes}") if truncated
-    filter_matched(event) if truncated
+    if truncated
+      @logger.debug("truncated one or more fields from event to length #{@length_bytes}")
+      filter_matched(event)
+    end  
   end
 
   module Truncator
