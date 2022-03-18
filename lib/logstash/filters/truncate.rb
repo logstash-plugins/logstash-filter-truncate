@@ -40,13 +40,19 @@ class LogStash::Filters::Truncate < LogStash::Filters::Base
 
   def filter(event)
     if @fields
-      @fields.each do |field|
-        Truncator.truncate(event, field, @length_bytes)
-      end
+      truncated = Truncator.truncate_all(fields, event, @length_bytes)
     else
-      Truncator.truncate_all(event, @length_bytes)
+      # TODO(sissel): I couldn't find a better way to get the top level keys for
+      # an event. Nor could I find a way to iterate over all the keys in an
+      # event, so this may have to suffice.
+      fields = event.to_hash.keys.map { |k| "[#{k}]" }
+      truncated = Truncator.truncate_all(fields, event, @length_bytes)
     end
-    filter_matched(event)
+    
+    if truncated
+      @logger.debug("truncated one or more fields from event to length #{@length_bytes}")
+      filter_matched(event)
+    end  
   end
 
   module Truncator
@@ -79,18 +85,23 @@ class LogStash::Filters::Truncate < LogStash::Filters::Base
       return v
     end
 
-    def truncate_all(event, length)
-      # TODO(sissel): I couldn't find a better way to get the top level keys for
-      # an event. Nor could I find a way to iterate over all the keys in an
-      # event, so this may have to suffice.
-      fields = event.to_hash.keys.map { |k| "[#{k}]" }
+    def truncate_all(fields, event, length)
+      truncated = false
+
       fields.each do |field|
+        before = event.get(field)
         truncate(event, field, length)
+        after = event.get(field)
+
+        truncated ||= (before != after)
       end
+
+      truncated
     end
 
     def truncate(event, field, length)
       value = event.get(field)
+
       if value.is_a?(String)
         event.set(field, trim(value, length))
       elsif value.is_a?(Array)
