@@ -107,14 +107,6 @@ describe LogStash::Filters::Truncate do
     it "should not modify `message`" do
       expect(event.get("message")).to be == text
     end
-
-#     stress_it "should only call filter_matched if a field was truncated" do
-#       if event.get("example").bytesize > length
-#         expect(subject).to receive(:filter_matched).once
-#       else
-#         expect(subject).not_to receive(:filter_matched)
-#       end
-#     end
   end
 
   context "with non-string fields" do
@@ -143,19 +135,13 @@ describe LogStash::Filters::Truncate do
       stress_it "should truncate all elements in a list" do
         count.times do |i|
           expect(event.get("[example][#{i}]").bytesize).to be <= length
-
-          if event.get("[example][#{i}]").bytesize > length
-            expect(subject).to receive(:filter_matched).once
-          else
-            expect(subject).not_to receive(:filter_matched)
-          end
         end
       end
     end
 
     context "containing elements greater than size" do
       let(:count) { 10 }
-      let(:list) { count.times.map { Flores::Random.text(100) } }
+      let(:list) { count.times.map { "a" * 100) } }
       let(:length) { 50 }
 
       it "should truncate all elements" do
@@ -171,7 +157,7 @@ describe LogStash::Filters::Truncate do
 
     context "containing elements with mixed sizes" do
       let(:count) { 10 }
-      let(:list) { (count - 1).times.map { Flores::Random.text(20) } + [Flores::Random.text(100)]}
+      let(:list) { (count - 1).times.map { "a" * 20 } + ["b" * 100]}
       let(:length) { 50 }
 
       it "should truncate elements that exceed the length" do
