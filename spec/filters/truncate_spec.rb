@@ -141,7 +141,7 @@ describe LogStash::Filters::Truncate do
 
     context "containing elements greater than size" do
       let(:count) { 10 }
-      let(:list) { count.times.map { "a" * 100) } }
+      let(:list) { count.times.map { "a" * 100 } }
       let(:length) { 50 }
 
       it "should truncate all elements" do
