@@ -1,3 +1,6 @@
+## 1.0.6
+  - Make 0.0.8 the lower bound for flores dependency [#9](https://api.github.com/repos/logstash-plugins/logstash-filter-truncate/pulls/9)
+
 ## 1.0.5
   - Switches behavior of add_tag and add_field, now tags and fields are added only when the truncation happens 
     on any field or nested field [#7](https://github.com/logstash-plugins/logstash-filter-truncate/pull/7).
